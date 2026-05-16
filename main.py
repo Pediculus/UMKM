@@ -10,13 +10,18 @@ from sklearn.cluster import KMeans
 from sklearn.linear_model import LinearRegression
 from supabase import create_client, Client
 
-app = FastAPI(title="UMKM Market Intelligence - Production Cloud", version="12.0")
+app = FastAPI(title="UMKM Market Intelligence - Secure Cloud", version="13.0")
 
-# --- 1. CONFIGURATION: CONNECT TO SUPABASE CLOUD ---
-# Replace these strings with your actual Supabase credentials (or use environment variables)
-SUPABASE_URL = "YOUR_SUPABASE_URL_HERE"
-SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY_HERE"
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# --- 1. SECURE CONFIGURATION: CONNECT TO SUPABASE CLOUD ---
+# It dynamically pulls from Streamlit Cloud Secrets (or your local environment)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    print("⚠️ PERINGATAN: Kunci Supabase tidak ditemukan di Environment Variables!")
+    supabase = None
+else:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # --- 2. LOAD STATIC MARKET DATASET (THE CORE AI BRAIN) ---
 try:
@@ -70,16 +75,15 @@ class NewSale(BaseModel):
 
 @app.post("/api/auth/register")
 def register_user(user: UserAuth):
+    if not supabase: raise HTTPException(status_code=500, detail="Database belum terhubung.")
     username_clean = user.username.strip().lower()
     
-    # Query Supabase to see if the user already exists
     existing = supabase.table("users").select("username").eq("username", username_clean).execute()
     if existing.data:
         raise HTTPException(status_code=400, detail="Username sudah terdaftar! Gunakan nama lain.")
     
     pwd_hash, salt_hex = hash_password(user.password)
     
-    # Insert new user data securely into Supabase
     supabase.table("users").insert({
         "username": username_clean,
         "password_hash": pwd_hash,
@@ -90,9 +94,9 @@ def register_user(user: UserAuth):
 
 @app.post("/api/auth/login")
 def login_user(user: UserAuth):
+    if not supabase: raise HTTPException(status_code=500, detail="Database belum terhubung.")
     username_clean = user.username.strip().lower()
     
-    # Fetch user details from Supabase cloud database
     res = supabase.table("users").select("*").eq("username", username_clean).execute()
     if not res.data:
         raise HTTPException(status_code=400, detail="Username tidak ditemukan.")
@@ -107,10 +111,10 @@ def login_user(user: UserAuth):
 
 @app.post("/api/sales/add")
 def add_new_sale(sale: NewSale):
+    if not supabase: raise HTTPException(status_code=500, detail="Database belum terhubung.")
     revenue = (sale.harga_satuan * sale.total_qty) - sale.total_diskon
     if revenue < 0: revenue = 0 
     
-    # Save transaction instantly to the cloud database
     supabase.table("sales").insert({
         "username": sale.username.strip().lower(),
         "produk": sale.kategori_produk,
@@ -125,26 +129,25 @@ def add_new_sale(sale: NewSale):
 
 @app.post("/api/sales/clear")
 def clear_all_sales(username: str):
-    # Wipe entries for this specific user safely from the cloud database
+    if not supabase: raise HTTPException(status_code=500, detail="Database belum terhubung.")
     supabase.table("sales").delete().eq("username", username.strip().lower()).execute()
     return {"message": "Database kas privat Anda berhasil dikosongkan!"}
 
 @app.get("/api/dashboard/data")
 def get_dashboard_and_playbooks(username: str):
-    # Form options still generate from our baseline macro dataset
     form_options = {
         "categories": df_history['product_categories'].dropna().unique().tolist() if not df_history.empty else [],
         "provinces": df_history['Provinsi'].dropna().unique().tolist() if not df_history.empty else [],
         "cities": df_history['Kota/Kabupaten'].dropna().unique().tolist() if not df_history.empty else []
     }
 
-    # Pull user data from Supabase
+    if not supabase:
+        return {"is_empty": True, "form_options": form_options, "kpis": {"revenue": 0, "total_orders": 0, "items_sold": 0, "top_product": "Sistem Offline"}}
+
     res = supabase.table("sales").select("*").eq("username", username.strip().lower()).execute()
     user_records = res.data
 
-    # HYBRID TRIGGER: Fallback prediction check if the user's personal database is empty
     if not user_records:
-        # Fallback values drawn strictly from the first macro dataset so the page never looks empty
         top_market_prod = df_history['product_categories'].mode()[0] if not df_history.empty else "Produk Umum"
         return {
             "is_empty": True, 
@@ -152,7 +155,6 @@ def get_dashboard_and_playbooks(username: str):
             "kpis": {"revenue": 0, "total_orders": 0, "items_sold": 0, "top_product": f"{top_market_prod} (Rekomendasi Tren)"}
         }
 
-    # Convert cloud records directly into a Pandas DataFrame for our AI engines
     user_df = pd.DataFrame(user_records)
     top_product_by_qty = user_df.groupby('produk')['qty'].sum().idxmax()
 
@@ -166,9 +168,6 @@ def get_dashboard_and_playbooks(username: str):
     top_user_city = user_df['kota'].mode()[0] if not user_df.empty else ""
     top_user_prod = top_product_by_qty
 
-    # --- HYBRID AI ENGINE PLUGINS (COMPARING CLOUD DATA vs FILE DATASET) ---
-    
-    # ENGINE A: LOGISTIK
     try:
         market_logistics = df_history.groupby(['Provinsi', 'Kota/Kabupaten']).agg(avg_ongkir=('Perkiraan Ongkos Kirim', 'mean')).reset_index()
         kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
@@ -183,7 +182,6 @@ def get_dashboard_and_playbooks(username: str):
     except:
         logistics = "Data logistik pasar sedang dikalibrasi."
 
-    # ENGINE B: STRATEGI HARGA
     try:
         df_prod_market = df_history[df_history['product_categories'].str.contains(top_user_prod, case=False, na=False)]
         if len(df_prod_market) > 3:
@@ -195,7 +193,6 @@ def get_dashboard_and_playbooks(username: str):
     except:
         pricing = "AI sedang menganalisis strategi harga produk ini."
 
-    # ENGINE C: PREDIKSI DEMAND
     try:
         next_event, days_until = get_next_double_date(datetime.datetime.now())
         multiplier = 2.3 if days_until <= 14 else 1.0
