@@ -42,10 +42,10 @@ if "username" not in st.session_state:
 
 # --- TAMPILAN JIKA BELUM LOGIN (PORTAL AUTENTIKASI) ---
 if not st.session_state.logged_in:
-    st.title("🔐 Selamat Datang di UMKM AI Engine")
+    st.title("Selamat Datang di UMKM AI Engine")
     st.subheader("Silakan masuk atau buat akun baru untuk mengisolasi data privat Anda.")
 
-    tab_login, tab_register = st.tabs(["🔑 Masuk (Login)", "📝 Daftar Akun Baru (Register)"])
+    tab_login, tab_register = st.tabs(["Masuk (Login)", "Daftar Akun Baru (Register)"])
 
     with tab_login:
         user_in = st.text_input("Username", key="login_user").strip().lower()
@@ -126,19 +126,19 @@ def fetch_data(username):
 data = fetch_data(st.session_state.username)
 
 if data is None:
-    st.warning("🔄 Sinkronisasi dengan AI Engine tertunda... Silakan muat ulang halaman jika dashboard tidak tampil.")
+    st.warning("Sinkronisasi dengan AI Engine tertunda... Silakan muat ulang halaman jika dashboard tidak tampil.")
     if st.button("Refresh Dashboard"):
         st.rerun()
     st.stop()
 
 # --- SIDEBAR: SMART INPUT FORM ---
-st.sidebar.title(f"👤 Akun: {st.session_state.username.capitalize()}")
+st.sidebar.title(f"Akun: {st.session_state.username.capitalize()}")
 
 existing_categories = data["form_options"].get("categories", [])
-options_list = existing_categories + ["➕ Kategori Custom / Baru..."]
+options_list = existing_categories + ["Kategori Custom / Baru..."]
 cat_selection = st.sidebar.selectbox("Kategori Produk", options=options_list)
 
-if cat_selection == "➕ Kategori Custom / Baru...":
+if cat_selection == "Kategori Custom / Baru...":
     cat = st.sidebar.text_input("Ketik Nama Produk Baru", placeholder="Contoh: Dompet Kulit Asli")
 else:
     cat = cat_selection
@@ -153,7 +153,7 @@ ongkir_asli = st.sidebar.number_input("Ongkir dari Kurir (Rp)", min_value=0.0, v
 ongkir_dibayar = st.sidebar.number_input("Ongkir Pembeli (Rp)", min_value=0.0, value=15000.0)
 
 # FIXED: Standard button outside a strict form element to allow our micro-retry algorithm to do its magic instantly
-submit_btn = st.sidebar.button("➕ Simpan Penjualan", use_container_width=True, type="primary")
+submit_btn = st.sidebar.button("Simpan Penjualan", use_container_width=True, type="primary")
 
 if submit_btn:
     if not cat:
@@ -189,9 +189,9 @@ if submit_btn:
 
 # --- SIDEBAR BAWAH: UTILITY TOOLS ---
 st.sidebar.markdown("---")
-st.sidebar.markdown("⚙️ **Aksi Akun**")
+st.sidebar.markdown("**Aksi Akun**")
 
-btn_clear = st.sidebar.button("🗑️ Hapus Semua Data Saya", use_container_width=True, type="secondary")
+btn_clear = st.sidebar.button("Hapus Semua Data Saya", use_container_width=True, type="secondary")
 if btn_clear:
     res_clear = None
     with st.spinner("Mengosongkan data kas privat..."):
@@ -209,18 +209,18 @@ if btn_clear:
     else:
         st.sidebar.error("Gagal mengosongkan data.")
 
-if st.sidebar.button("🚪 Keluar (Logout)", use_container_width=True):
+if st.sidebar.button("Keluar (Logout)", use_container_width=True):
     st.session_state.logged_in = False
     st.session_state.username = ""
     st.cache_data.clear()
     st.rerun()
 
 # --- MAIN DASHBOARD AREA ---
-st.title("🛍️ Dashboard Toko & Market Intelligence")
+st.title("Dashboard Toko & Market Intelligence")
 
 if data.get("is_empty"):
     st.info(
-        f"👋 Selamat datang **{st.session_state.username.capitalize()}**! Buku kas Anda masih kosong. Silakan catat penjualan pertama Anda di menu sebelah kiri agar AI dapat membandingkannya dengan tren pasar saat ini.")
+        f"Selamat datang **{st.session_state.username.capitalize()}**! Buku kas Anda masih kosong. Silakan catat penjualan pertama Anda di menu sebelah kiri agar AI dapat membandingkannya dengan tren pasar saat ini.")
 else:
     st.markdown(
         f"Selamat datang kembali, **{st.session_state.username.capitalize()}**! Berikut adalah analisis performa toko Anda terisolasi aman.")
@@ -246,18 +246,18 @@ else:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    st.markdown("### 🧠 Saran Konsultan AI Berdasarkan Data Pasar (Market Wisdom)")
+    st.markdown("### Saran Konsultan AI Berdasarkan Data Pasar (Market Wisdom)")
     pb = data["playbooks"]
     p1, p2, p3 = st.columns(3)
     with p1:
         st.markdown(
-            f'<div class="playbook-box log-box" style="color: black;"><h4 style="color: black;">🚨 Logistik & Ongkir</h4><p style="color: black;">{pb["logistics"]}</p></div>',
+            f'<div class="playbook-box log-box" style="color: black;"><h4 style="color: black;">Logistik & Ongkir</h4><p style="color: black;">{pb["logistics"]}</p></div>',
             unsafe_allow_html=True)
     with p2:
         st.markdown(
-            f'<div class="playbook-box price-box" style="color: black;"><h4 style="color: black;">💰 Strategi Harga</h4><p style="color: black;">{pb["pricing"]}</p></div>',
+            f'<div class="playbook-box price-box" style="color: black;"><h4 style="color: black;">Strategi Harga</h4><p style="color: black;">{pb["pricing"]}</p></div>',
             unsafe_allow_html=True)
     with p3:
         st.markdown(
-            f'<div class="playbook-box supply-box" style="color: black;"><h4 style="color: black;">📦 Prediksi Demand</h4><p style="color: black;">{pb["supply"]}</p></div>',
+            f'<div class="playbook-box supply-box" style="color: black;"><h4 style="color: black;">Prediksi Demand</h4><p style="color: black;">{pb["supply"]}</p></div>',
             unsafe_allow_html=True)
