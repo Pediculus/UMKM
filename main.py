@@ -17,9 +17,9 @@ try:
     df_history = pd.read_csv("all_months_clean.csv", delimiter=";")
     df_history['Waktu Pesanan Dibuat'] = pd.to_datetime(df_history['Waktu Pesanan Dibuat'], errors='coerce')
     df_history = df_history.dropna(subset=['Waktu Pesanan Dibuat'])
-    print("✅ Market Data (all_months_clean.csv) berhasil dimuat sebagai Helper AI.")
+    print("Market Data (all_months_clean.csv) berhasil dimuat sebagai Helper AI.")
 except Exception as e:
-    print(f"❌ Error loading CSV Pasar: {e}")
+    print(f"Error loading CSV Pasar: {e}")
     df_history = pd.DataFrame()
 
 # --- 2. SISTEM KEAMANAN & KREDENSIAL ---
@@ -188,9 +188,9 @@ def get_dashboard_and_playbooks(username: str):
 
         user_city_data = market_logistics[(market_logistics['Kota/Kabupaten'] == top_user_city)]
         if not user_city_data.empty and user_city_data.iloc[0]['cluster'] == danger_idx:
-            logistics = f"⚠️ Peringatan AI: Berdasarkan data pasar, area pelanggan utama Anda (**{top_user_city}**) adalah 'Zona Merah Ongkir'. Pertimbangkan subsidi ongkir agar konversi tidak turun."
+            logistics = f"Peringatan AI: Berdasarkan data pasar, area pelanggan utama Anda (**{top_user_city}**) adalah 'Zona Merah Ongkir'. Pertimbangkan subsidi ongkir agar konversi tidak turun."
         else:
-            logistics = f"✅ Logistik Aman: Pengiriman ke **{top_user_city}** memiliki rata-rata ongkir yang wajar di pasaran."
+            logistics = f"Logistik Aman: Pengiriman ke **{top_user_city}** memiliki rata-rata ongkir yang wajar di pasaran."
     except:
         logistics = "Data logistik pasar sedang dikalibrasi."
 
